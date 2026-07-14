@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="fr" class="h-full">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Islam livrili - Commandes B2B</title>
+  
+  <!-- CSS : Tailwind CSS (CDN) & Font Awesome -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- Configuration Couleur Ambre & Mode Sombre -->
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: '#D97706', // Ambre élégant
+            darkBg: '#0F172A',
+            darkCard: '#1E293B'
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Styles additionnels intégrés -->
+  <style>
+    .scrollbar-none::-webkit-scrollbar {
+      display: none;
+    }
+    .scrollbar-none {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+  </style>
+</head>
+<body class="bg-gray-50 text-slate-800 dark:bg-darkBg dark:text-slate-100 min-h-screen flex flex-col font-sans transition-colors duration-200">
+
+  <!-- En-tête Fixe -->
+  <header class="sticky top-0 z-40 bg-slate-900 text-white shadow-md px-4 py-3 flex items-center justify-between">
+    <div class="flex items-center space-x-3">
+      <div class="bg-brand text-white font-extrabold px-3 py-1.5 rounded-lg text-lg tracking-wide shadow-sm">
+        Islam livrili
+      </div>
+      <div>
+        <h1 class="text-[10px] font-bold tracking-widest text-slate-400 uppercase">Grossiste Alimentaire</h1>
+        <p id="shop-indicator" class="text-xs text-brand font-semibold">Veuillez renseigner votre code magasin</p>
+      </div>
+    </div>
+    <div class="flex items-center space-x-3">
+      <!-- Changement de thème -->
+      <button id="theme-toggle" class="p-2 hover:bg-slate-800 rounded-full transition text-brand">
+        <i class="fa-solid fa-moon text-lg"></i>
+      </button>
+      <!-- Icône Panier -->
+      <div class="relative cursor-pointer bg-slate-800 p-2.5 rounded-xl hover:bg-slate-700 transition" onclick="toggleCartModal()">
+        <i class="fa-solid fa-basket-shopping text-white hover:text-brand transition"></i>
+        <span id="cart-badge" class="absolute -top-1.5 -right-1.5 bg-brand text-white text-[10px] font-bold rounded-full h-5 w-5 flex items-center justify-center hidden">0</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Barre Horizontale des Catégories (Masquée au départ) -->
+  <nav id="category-bar" class="hidden bg-white dark:bg-darkCard shadow-sm border-b dark:border-slate-700 overflow-x-auto whitespace-nowrap px-4 py-3 flex space-x-2 scrollbar-none">
+    <!-- Chargement automatique via JavaScript -->
+  </nav>
+
+  <!-- FORMULAIRE DE SAISIE CODE MAGASIN (Écran d'Accueil) -->
+  <main id="auth-screen" class="flex-grow flex flex-col items-center justify-center p-6 text-center">
+    <div class="bg-white dark:bg-darkCard p-8 rounded-2xl shadow-xl max-w-md w-full border border-slate-250 dark:border-slate-800">
+      <div class="w-16 h-16 bg-amber-50 dark:bg-slate-800 text-brand rounded-full flex items-center justify-center mx-auto mb-4 text-3xl">
+        <i class="fa-solid fa-store font-bold"></i>
+      </div>
+      <h2 class="text-2xl font-black mb-2 text-slate-900 dark:text-white">Connexion Magasin</h2>
+      <p class="text-sm text-gray-500 dark:text-gray-400 mb-6">Saisissez votre code d'accès commerçant à 4 chiffres pour commencer vos achats.</p>
+      
+      <!-- Erreurs -->
+      <div id="auth-error" class="hidden bg-red-50 dark:bg-red-950/30 text-red-600 dark:text-red-400 p-3 rounded-xl mb-4 text-sm font-semibold border border-red-200 dark:border-red-900"></div>
+      
+      <input type="tel" id="manual-shop-id" maxlength="4" placeholder="••••" class="w-full px-4 py-4 rounded-xl border border-slate-300 dark:border-slate-700 bg-transparent mb-4 focus:ring-2 focus:ring-brand focus:outline-none text-center font-black text-3xl tracking-widest text-slate-900 dark:text-white">
+      
+      <button onclick="validateAndConnectShop()" id="btn-connect" class="w-full bg-brand hover:bg-amber-700 text-white font-bold py-3.5 px-6 rounded-xl transition duration-150 shadow-md">
+        <i class="fa-solid fa-arrow-right-to-bracket mr-2"></i>Se connecter
+      </button>
+    </div>
+  </main>
+
+  <!-- CATALOGUE INTERACTIF (Masqué au départ) -->
+  <main id="app-content" class="hidden flex-grow max-w-7xl w-full mx-auto p-4 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+    <!-- Injecté automatiquement par JS -->
+  </main>
+
+  <!-- PANIER ET FORMULAIRE DE COMMANDE COULISSANT -->
+  <div id="cart-modal" class="fixed inset-0 bg-black/60 z-50 transition-opacity duration-300 opacity-0 pointer-events-none flex justify-end">
+    <div class="bg-white dark:bg-darkCard w-full max-w-md h-full shadow-2xl flex flex-col p-6 transform translate-x-full transition-transform duration-300">
+      <div class="flex items-center justify-between border-b pb-4 mb-4 dark:border-slate-700">
+        <h3 class="text-lg font-black"><i class="fa-solid fa-cart-shopping mr-2 text-brand"></i>Votre Panier</h3>
+        <button onclick="toggleCartModal()" class="text-gray-400 hover:text-red-500 transition"><i class="fa-solid fa-xmark text-2xl"></i></button>
+      </div>
+      
+      <!-- Liste des articles -->
+      <div id="cart-items" class="flex-grow overflow-y-auto space-y-4 pr-1">
+        <!-- Rempli dynamiquement -->
+      </div>
+      
+      <!-- Totalisation en Dinars Algériens -->
+      <div class="border-t pt-4 mt-4 dark:border-slate-700 space-y-2">
+        <div class="flex justify-between text-sm text-gray-500"><p>Sous-total HT</p><p id="cart-subtotal">0.00 DA</p></div>
+        <div class="flex justify-between text-sm text-gray-500"><p>TVA cumulée</p><p id="cart-tva">0.00 DA</p></div>
+        <div class="flex justify-between text-lg font-bold border-t pt-2 dark:border-slate-700">
+          <p>Total TTC</p>
+          <p id="cart-total" class="text-brand">0.00 DA</p>
+        </div>
+        <button onclick="submitOrder()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3.5 px-6 rounded-xl mt-4 transition shadow-md flex items-center justify-center space-x-2">
+          <i class="fa-solid fa-circle-check"></i><span>Confirmer la commande</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+  <script>
+    // ⚠️ METTRE ICI VOTRE PROPRE LIEN APPS SCRIPT PUBLIÉ
+    const API_URL = "https://script.google.com/macros/s/AKfycbxhkMRoHpj6ts6IcyLmbToZk3ZuotVdakHNQGXjXZq7wt6EGpon07NJNTeR_Rt61Hij/exec";
+
+    let products = [];
+    let cart = {};
+    let currentShop = null;
+
+    // Détection de session à l'allumage
+    window.addEventListener('DOMContentLoaded', () => {
+      initTheme();
+      const savedShop = localStorage.getItem('islam_livrili_shop');
+      if (savedShop) {
+        currentShop = savedShop;
+        document.getElementById('shop-indicator').innerText = `Connecté : Magasin #${currentShop}`;
+        loadApp();
+      }
+    });
+
+    // Formulaire de Validation Code Magasin
+    async function validateAndConnectShop() {
+      const codeInput = document.getElementById('manual-shop-id').value.trim();
+      const errorDiv = document.getElementById('auth-error');
+      const btn = document.getElementById('btn-connect');
+      
+      if (!codeInput || codeInput.length < 3) {
+        showError("Code magasin trop court.");
+        return;
+      }
+
+      btn.disabled = true;
+      btn.innerText = "Validation...";
+      errorDiv.classList.add('hidden');
+
+      try {
+        const response = await fetch(`${API_URL}?action=validateShopCode&shopId=${codeInput}`);
+        const result = await response.json();
+
+        if (result.success && result.data.valid) {
+          currentShop = codeInput;
+          localStorage.setItem('islam_livrili_shop', currentShop);
+          document.getElementById('shop-indicator').innerText = result.data.shop.nom_magasin;
+          loadApp();
+        } else {
+          showError(result.data.message || "Ce code magasin n'existe pas ou est inactif.");
+          resetConnectBtn(btn);
+        }
+      } catch (err) {
+        console.warn("Connexion API manquante, basculement en mode démo.");
+        currentShop = codeInput;
+        localStorage.setItem('islam_livrili_shop', currentShop);
+        document.getElementById('shop-indicator').innerText = `Magasin local : #${currentShop}`;
+        loadApp();
+      }
+    }
+
+    function resetConnectBtn(btn) {
+      btn.disabled = false;
+      btn.innerHTML = `<i class="fa-solid fa-arrow-right-to-bracket mr-2"></i>Se connecter`;
+    }
+
+    function showError(msg) {
+      const errorDiv = document.getElementById('auth-error');
+      errorDiv.innerText = msg;
+      errorDiv.classList.remove('hidden');
+    }
+
+    // Chargement de l'interface
+    async function loadApp() {
+      document.getElementById('auth-screen').classList.add('hidden');
+      document.getElementById('app-content').classList.remove('hidden');
+      document.getElementById('category-bar').classList.remove('hidden');
+
+      try {
+        const res = await fetch(`${API_URL}?action=getProducts`);
+        const result = await res.json();
+        if (result.success) {
+          products = result.data;
+          renderCategories();
+          renderProducts(products);
+        }
+      } catch (e) {
+        loadLocalDemoProducts();
+      }
+    }
+
+    function renderCategories() {
+      const categories = [...new Set(products.map(p => p.categorie))];
+      const catBar = document.getElementById('category-bar');
+      catBar.innerHTML = `<button onclick="filterCategory('all')" class="bg-brand text-white px-4 py-2 rounded-full font-bold text-xs shadow-sm transition">Tous</button>`;
+      
+      categories.forEach(cat => {
+        catBar.innerHTML += `<button onclick="filterCategory('${cat}')" class="bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 px-4 py-2 rounded-full text-xs font-semibold transition whitespace-nowrap">${cat}</button>`;
+      });
+    }
+
+    function renderProducts(items) {
+      const container = document.getElementById('app-content');
+      container.innerHTML = "";
+      
+      items.forEach(prod => {
+        const isOutOfStock = prod.stock <= 0;
+        container.innerHTML += `
+          <div class="bg-white dark:bg-darkCard rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 overflow-hidden flex flex-col justify-between p-4 relative group">
+            <img src="${prod.image_url || 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=300'}" alt="${prod.nom}" class="h-28 w-full object-cover rounded-lg mb-3">
+            <div class="flex-grow">
+              <span class="text-[10px] text-brand font-extrabold uppercase tracking-widest">${prod.categorie}</span>
+              <h3 class="font-bold text-sm mt-0.5 line-clamp-2">${prod.nom}</h3>
+              <p class="text-[10px] text-gray-400">Réf : ${prod.ref}</p>
+            </div>
+            <div class="mt-4 flex items-center justify-between">
+              <div>
+                <p class="text-base font-black">${parseFloat(prod.prix_ht).toFixed(2)} DA</p>
+                <p class="text-[9px] text-gray-400">TVA: ${prod.tva_taux}%</p>
+              </div>
+              ${isOutOfStock ? 
+                `<span class="bg-red-50 text-red-600 text-[10px] px-2.5 py-1 rounded-full font-bold">Épuisé</span>` :
+                `<button onclick="addToCart('${prod.id_produit}')" class="bg-slate-900 dark:bg-slate-800 text-white p-2.5 rounded-xl hover:bg-brand hover:text-white transition shadow"><i class="fa-solid fa-plus text-xs"></i></button>`
+              }
+            </div>
+          </div>`;
+      });
+    }
+
+    function filterCategory(cat) {
+      if (cat === 'all') renderProducts(products);
+      else renderProducts(products.filter(p => p.categorie === cat));
+    }
+
+    /* ================= GESTION DU PANIER ================= */
+
+    function addToCart(id) {
+      const prod = products.find(p => p.id_produit === id);
+      if (!prod) return;
+      if (cart[id]) cart[id].quantite += 1;
+      else cart[id] = { ...prod, quantite: 1 };
+      updateCartBadge();
+      confetti({ particleCount: 25, spread: 45, origin: { y: 0.95 } });
+    }
+
+    function updateCartBadge() {
+      const badge = document.getElementById('cart-badge');
+      const totalItems = Object.values(cart).reduce((sum, item) => sum + item.quantite, 0);
+      if (totalItems > 0) {
+        badge.innerText = totalItems;
+        badge.classList.remove('hidden');
+      } else {
+        badge.classList.add('hidden');
+      }
+    }
+
+    function toggleCartModal() {
+      const modal = document.getElementById('cart-modal');
+      const inner = modal.querySelector('div');
+      if (modal.classList.contains('opacity-0')) {
+        modal.classList.remove('opacity-0', 'pointer-events-none');
+        inner.classList.remove('translate-x-full');
+        renderCartItems();
+      } else {
+        modal.classList.add('opacity-0', 'pointer-events-none');
+        inner.classList.add('translate-x-full');
+      }
+    }
+
+    function renderCartItems() {
+      const container = document.getElementById('cart-items');
+      container.innerHTML = "";
+      let subtotal = 0, tvaTotal = 0;
+
+      Object.values(cart).forEach(item => {
+        const itemHT = parseFloat(item.prix_ht) * item.quantite;
+        const itemTVA = itemHT * (parseFloat(item.tva_taux) / 100);
+        subtotal += itemHT;
+        tvaTotal += itemTVA;
+
+        container.innerHTML += `
+          <div class="flex items-center justify-between border-b dark:border-slate-800 pb-3">
+            <div class="flex-1">
+              <h4 class="font-bold text-sm text-slate-800 dark:text-slate-100">${item.nom}</h4>
+              <p class="text-xs text-gray-400">${parseFloat(item.prix_ht).toFixed(2)} DA HT</p>
+            </div>
+            <div class="flex items-center space-x-2">
+              <button onclick="updateQty('${item.id_produit}', -1)" class="w-8 h-8 rounded-full border dark:border-slate-700 flex items-center justify-center hover:bg-slate-200 dark:hover:bg-slate-800"><i class="fa-solid fa-minus text-xs"></i></button>
+              <span class="font-bold text-sm w-5 text-center">${item.quantite}</span>
+              <button onclick="updateQty('${item.id_produit}', 1)" class="w-8 h-8 rounded-full border dark:border-slate-700 flex items-center justify-center hover:bg-slate-200 dark:hover:bg-slate-800"><i class="fa-solid fa-plus text-xs"></i></button>
+            </div>
+          </div>`;
+      });
+      document.getElementById('cart-subtotal').innerText = `${subtotal.toFixed(2)} DA`;
+      document.getElementById('cart-tva').innerText = `${tvaTotal.toFixed(2)} DA`;
+      document.getElementById('cart-total').innerText = `${(subtotal + tvaTotal).toFixed(2)} DA`;
+    }
+
+    function updateQty(id, delta) {
+      if (!cart[id]) return;
+      cart[id].quantite += delta;
+      if (cart[id].quantite <= 0) delete cart[id];
+      updateCartBadge();
+      renderCartItems();
+    }
+
+    async function submitOrder() {
+      const items = Object.values(cart);
+      if (items.length === 0) return alert("Votre panier est vide !");
+      
+      let subtotal = 0, tvaTotal = 0;
+      const orderItems = items.map(i => {
+        const ht = parseFloat(i.prix_ht) * i.quantite;
+        subtotal += ht;
+        tvaTotal += ht * (parseFloat(i.tva_taux) / 100);
+        return { id_produit: i.id_produit, quantite: i.quantite, prix_unitaire_ht: i.prix_ht };
+      });
+
+      const orderData = {
+        code_magasin: currentShop,
+        total_ht: subtotal.toFixed(2),
+        total_tva: tvaTotal.toFixed(2),
+        total_ttc: (subtotal + tvaTotal).toFixed(2),
+        items: orderItems
+      };
+
+      try {
+        const response = await fetch(API_URL, {
+          method: "POST",
+          body: JSON.stringify({ action: "createOrder", orderData: orderData })
+        });
+        const res = await response.json();
+        if (res.success) {
+          alert(`Félicitations ! Votre commande a été envoyée au siège. N° Commande : ${res.orderId}`);
+          cart = {};
+          updateCartBadge();
+          toggleCartModal();
+        }
+      } catch (err) {
+        alert(`Commande sauvegardée localement. Veuillez lier votre API Google Sheets.`);
+      }
+    }
+
+    /* ================= MODE DEMO (Fallback) ================= */
+
+    function initTheme() {
+      const toggle = document.getElementById('theme-toggle');
+      if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+        document.documentElement.classList.add('dark');
+      }
+      toggle.addEventListener('click', () => {
+        document.documentElement.classList.toggle('dark');
+        localStorage.theme = document.documentElement.classList.contains('dark') ? 'dark' : 'light';
+      });
+    }
+
+    function loadLocalDemoProducts() {
+      products = [
+        { id_produit: "P001", categorie: "Boissons", nom: "Hamoud Boualem Selecto 1.5L", ref: "BOI-SEL15", prix_ht: 120, tva_taux: 19, stock: 150, image_url: "https://images.unsplash.com/photo-1622483767028-3f66f32aef97?w=300" },
+        { id_produit: "P002", categorie: "Épicerie", nom: "Couscous Amor Benamor 1kg", ref: "EPI-BEN01", prix_ht: 145, tva_taux: 9, stock: 80, image_url: "https://images.unsplash.com/photo-1541832676-9b763b0239ab?w=300" },
+        { id_produit: "P003", categorie: "Produits Laitiers", nom: "Fromage Portion La Vache Qui Rit (x16)", ref: "LAI-VQR16", prix_ht: 290, tva_taux: 9, stock: 110, image_url: "https://images.unsplash.com/photo-1528243097678-739049b92434?w=300" }
+      ];
+      renderCategories();
+      renderProducts(products);
+    }
+  </script>
+</body>
+</html>
